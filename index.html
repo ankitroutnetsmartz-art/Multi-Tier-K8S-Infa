@@ -3,98 +3,49 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DevOps Control Plane</title>
+    <title>DevOps Control Plane + Monitoring</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         :root { --azure-blue: #0078d4; --dark-bg: #1a1a1a; }
-        body { background-color: #f0f2f5; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .hero { background: linear-gradient(135deg, var(--azure-blue) 0%, #005a9e 100%); color: white; padding: 4rem 0; clip-path: polygon(0 0, 100% 0, 100% 90%, 0 100%); }
-        .card { border: none; transition: transform 0.3s; border-radius: 12px; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        .status-dot { height: 12px; width: 12px; background-color: #28a745; border-radius: 50%; display: inline-block; margin-right: 5px; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+        body { background-color: #f0f2f5; font-family: 'Segoe UI', sans-serif; }
+        .hero { background: linear-gradient(135deg, #2c3e50 0%, #000000 100%); color: white; padding: 3rem 0; }
+        .metric-card { border-left: 5px solid #0078d4; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <nav class="navbar navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#"><i class="fas fa-cubes me-2"></i>K8S Cluster Dashboard</a>
-            <div class="navbar-nav ms-auto">
-                <span class="nav-link text-light"><span class="status-dot"></span> Cluster: Healthy</span>
-            </div>
+            <a class="navbar-brand" href="#"><i class="fas fa-microchip me-2"></i>Infrastructure Monitor</a>
         </div>
     </nav>
 
     <header class="hero text-center">
         <div class="container">
-            <h1 class="display-3 fw-bold">Project 1: Scalable Web Stack</h1>
-            <p class="lead">Orchestrated by MicroK8s on Azure Ubuntu 24.04 LTS</p>
-            <div class="mt-4">
-                <span class="badge bg-light text-dark p-2 px-3">Replicas: 5 Active Pods</span>
-                <span class="badge bg-light text-dark p-2 px-3">Service: NodePort 32000</span>
-            </div>
+            <h1 class="display-4 fw-bold text-info">Project 2: Active Monitoring</h1>
+            <p class="lead">Metrics Server Enabled | Real-time Resource Scrape</p>
         </div>
     </header>
 
     <main class="container my-5">
-        <div class="row g-4 mb-5">
-            <div class="col-md-4">
-                <div class="card h-100 p-4">
-                    <i class="fas fa-server fa-3x text-primary mb-3"></i>
-                    <h4>Azure Compute</h4>
-                    <p class="text-muted">Running on Standard B2s instance. Provisioned for high-logic throughput.</p>
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card p-4 metric-card shadow-sm h-100">
+                    <h5 class="text-primary"><i class="fas fa-chart-line me-2"></i>Resource Tracking</h5>
+                    <p>Metrics Server is currently scraping <b>CPU (milli-cores)</b> and <b>RAM (MiB)</b> across 5 replicas.</p>
+                    <div class="progress mt-2" style="height: 10px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 75%"></div>
+                    </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card h-100 p-4">
-                    <i class="fas fa-network-wired fa-3x text-primary mb-3"></i>
-                    <h4>Traffic Routing</h4>
-                    <p class="text-muted">K8S Service distributes traffic across all 5 pods for load balancing.</p>
+            <div class="col-md-6">
+                <div class="card p-4 bg-dark text-success shadow-sm h-100">
+                    <h5><i class="fas fa-terminal me-2"></i>Live CLI Insight</h5>
+                    <code>$ microk8s kubectl top pods</code>
+                    <p class="mt-3 text-light small">Run the above in your terminal to see live load distribution.</p>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card h-100 p-4">
-                    <i class="fas fa-code-branch fa-3x text-primary mb-3"></i>
-                    <h4>GitOps Ready</h4>
-                    <p class="text-muted">Source code version-controlled on GitHub with SSH authentication.</p>
-                </div>
-            </div>
-        </div>
-
-        <div class="bg-white p-4 rounded shadow-sm">
-            <h3 class="mb-4"><i class="fas fa-list me-2"></i>Infrastructure Specification</h3>
-            <table class="table table-hover">
-                <thead class="table-light">
-                    <tr>
-                        <th>Component</th>
-                        <th>Technology</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr>
-                        <td>Container Runtime</td>
-                        <td>Containerd (MicroK8s)</td>
-                        <td><span class="badge bg-success">Active</span></td>
-                    </tr>
-                    <tr>
-                        <td>Configuration</td>
-                        <td>Kubernetes ConfigMap</td>
-                        <td><span class="badge bg-success">Mounted</span></td>
-                    </tr>
-                    <tr>
-                        <td>Frontend</td>
-                        <td>Nginx + Bootstrap 5</td>
-                        <td><span class="badge bg-success">Serving</span></td>
-                    </tr>
-                </tbody>
-            </table>
         </div>
     </main>
-
-    <footer class="text-center py-4 text-muted border-top bg-white">
-        <p>DevOps Project Series &copy; 2026 | Built for Speed & Accuracy</p>
-    </footer>
 </body>
 </html>

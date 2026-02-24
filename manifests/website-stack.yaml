@@ -17,7 +17,15 @@ spec:
         image: nginx:latest
         ports:
         - containerPort: 80
-        # HEALTH CHECKS START HERE
+        # Resource Limits are REQUIRED for HPA to function
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+        # Health Checks for Self-Healing
         livenessProbe:
           httpGet:
             path: /
@@ -30,14 +38,6 @@ spec:
             port: 80
           initialDelaySeconds: 5
           periodSeconds: 10
-        # RESOURCE LIMITS (Senior DevOps Standard)
-        resources:
-          requests:
-            cpu: "100m"
-            memory: "64Mi"
-          limits:
-            cpu: "200m"
-            memory: "128Mi"
         volumeMounts:
         - name: html-volume
           mountPath: /usr/share/nginx/html
@@ -45,3 +45,36 @@ spec:
       - name: html-volume
         configMap:
           name: website-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: azure-k8s-site-service
+spec:
+  type: NodePort
+  selector:
+    app: web-server
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+      nodePort: 32000
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: web-autoscaler
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: azure-k8s-site
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 50

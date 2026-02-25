@@ -1,28 +1,66 @@
-#Access Site Post Lauch k8s
-http://azure-site.local
+# How to Run Multi-Tier K8S Infrastructure Project
 
-#Access About Page via URL-Routing 
-http://azure-site.local/about.html
+Follow these steps to set up, run, and close the project locally using Minikube.
 
-#Apache Benchmark Traffic Spam Loop
-ab -n 100000 -c 100 -H "Host: azure-site.local" http://$TARGET_IP/
+## 1. Prerequisites
+Ensure you have the following installed:
+- Docker Engine
+- Kubectl
+- Minikube
 
-# Then run the load test (using your actual Minikube IP)
-ab -n 100000 -c 100 -H "Host: azure-site.local" http://$(minikube ip)/
+## 2. Start Minikube
+Open your terminal and start the local cluster:
+```bash
+minikube start --cpus=2 --memory=4096 --driver=docker
+```
 
-#Monitor Traffic via Terminal
-watch -n 1 "kubectl get hpa web-autoscaler; echo; kubectl top pods -l app=web-server"
-
-# Start Minikube
-minikube start
-
-# Enable required addons for Project 5 logic
-minikube addons enable ingress
+## 3. Enable Required Add-ons
+Enable the metrics server and ingress controller (necessary for HPA and routing):
+```bash
 minikube addons enable metrics-server
+minikube addons enable ingress
+```
 
-# Navigate to the project root
-cd ~/git/Multi-Tier-K8S-Infa
+## 4. Deploy the Infrastructure
+Run the automated setup script to build images and deploy all components (Backend, Redis, Website, Ingress, HPA):
+```bash
+chmod +x local_setup.sh
+./local_setup.sh
+```
 
-# Apply all manifests
-kubectl apply -f manifests/website-stack.yaml
+## 5. Access the Application
+To access the application via the Ingress hostname (`azure-site.local`):
 
+### A. Start Minikube Tunnel
+In a **Separate Terminal**, run:
+```bash
+minikube tunnel
+```
+*Note: Keep this running to allow traffic through the Ingress controller.*
+
+### B. Update Hosts File
+Map the Minikube IP to the project domain:
+```bash
+echo "$(minikube ip) azure-site.local" | sudo tee -a /etc/hosts
+```
+
+### C. Open in Browser
+Visit: [http://azure-site.local](http://azure-site.local)
+
+## 6. Monitor and Test
+- **Monitor Autoscaling**: `watch kubectl get hpa,pods`
+- **Check Logs**: `kubectl logs -l app=web-server`
+- **Load Test**: `ab -n 1000 -c 10 http://azure-site.local/api/health`
+
+## 7. Closing the Project
+To stop the environment and free up resources:
+
+### Stop Services
+```bash
+minikube stop
+```
+
+### Clean up (Optional - Removes all data)
+```bash
+minikube delete
+```

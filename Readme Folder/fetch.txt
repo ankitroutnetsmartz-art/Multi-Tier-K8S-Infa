@@ -7,6 +7,9 @@ http://azure-site.local/about.html
 #Apache Benchmark Traffic Spam Loop
 ab -n 100000 -c 100 -H "Host: azure-site.local" http://$TARGET_IP/
 
+# Then run the load test (using your actual Minikube IP)
+ab -n 100000 -c 100 -H "Host: azure-site.local" http://$(minikube ip)/
+
 #Monitor Traffic via Terminal
 watch -n 1 "kubectl get hpa web-autoscaler; echo; kubectl top pods -l app=web-server"
 

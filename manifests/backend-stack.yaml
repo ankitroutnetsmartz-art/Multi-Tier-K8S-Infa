@@ -1,0 +1,100 @@
+# ServiceAccount for backend to query K8s API
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: k8s-status-reader
+  namespace: default
+---
+# ClusterRole to read HPA, Pods, and Deployments
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: k8s-status-reader-role
+rules:
+  - apiGroups: ["autoscaling"]
+    resources: ["horizontalpodautoscalers"]
+    verbs: ["get", "list"]
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list"]
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list"]
+---
+# Bind the role to the service account
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: k8s-status-reader-binding
+subjects:
+  - kind: ServiceAccount
+    name: k8s-status-reader
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: k8s-status-reader-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-status-backend
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-status-backend
+  template:
+    metadata:
+      labels:
+        app: k8s-status-backend
+    spec:
+      serviceAccountName: k8s-status-reader
+      containers:
+        - name: backend
+          image: k8s-status-backend:latest
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 5000
+          env:
+            - name: NAMESPACE
+              value: "default"
+            - name: DEPLOYMENT_NAME
+              value: "azure-k8s-site"
+            - name: HPA_NAME
+              value: "web-autoscaler"
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-status-backend-service
+  namespace: default
+spec:
+  selector:
+    app: k8s-status-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 5000

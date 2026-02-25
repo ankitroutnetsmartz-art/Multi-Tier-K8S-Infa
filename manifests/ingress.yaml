@@ -1,19 +1,27 @@
-# Save this block and apply it: kubectl apply -f ingress.yaml
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: azure-k8s-site-ingress
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
 spec:
   rules:
-  - host: azure-site.local
-    http:
-      paths:
-      - path: /
-        pathType: Prefix
-        backend:
-          service:
-            name: azure-k8s-site-service
-            port:
-              number: 80
+    - host: azure-site.local
+      http:
+        paths:
+          # Route /api/* to backend service
+          - path: /api(/|$)(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: k8s-status-backend-service
+                port:
+                  number: 80
+          # Route everything else to website
+          - path: /()(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: azure-k8s-site-service
+                port:
+                  number: 80

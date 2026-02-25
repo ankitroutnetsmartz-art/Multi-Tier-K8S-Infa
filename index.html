@@ -1,85 +1,396 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Production Console | Dashboard</title>
+    <title>K8S Clusters | Traffic Dashboard</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root { --k8s-blue: #326ce5; --dark-bg: #0d1117; --border: #30363d; --accent: #58a6ff; }
-        body { background-color: var(--dark-bg); color: #c9d1d9; font-family: 'Consolas', monospace; }
-        .navbar { background-color: #010409; border-bottom: 1px solid var(--border); }
-        .hero { padding: 2.5rem 0; border-bottom: 1px solid var(--border); background: #161b22; }
-        .manifest-card { background-color: #161b22; border: 1px solid var(--border); border-radius: 12px; border-left: 4px solid var(--k8s-blue); }
-        .header-label { color: var(--accent); font-weight: bold; text-transform: uppercase; font-size: 0.85rem; letter-spacing: 1px; }
-        .replica-count { font-size: 5rem; font-weight: bold; color: #fff; line-height: 1; }
-        .pod-dot { 
-            height: 20px; width: 20px; border-radius: 4px; display: inline-block; margin: 6px; 
-            background-color: #238636; box-shadow: 0 0 10px #238636; animation: pulse 2s infinite; 
+        :root {
+            --k8s-blue: #326ce5;
+            --dark-bg: #0d1117;
+            --card-bg: #161b22;
+            --border: #30363d;
+            --accent: #58a6ff;
+            --success: #238636;
+            --warning: #d29922;
+            --danger: #da3633;
         }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-        .spec-item { padding: 15px; background: #010409; border: 1px solid var(--border); border-radius: 6px; }
-        .nav-link { color: #8b949e !important; font-size: 0.9rem; }
-        .nav-link.active { color: var(--accent) !important; font-weight: bold; }
+
+        body {
+            background-color: var(--dark-bg);
+            color: #c9d1d9;
+            font-family: 'Inter', -apple-system, system-ui, sans-serif;
+        }
+
+        .navbar {
+            background-color: #010409;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .hero {
+            padding: 2rem 0;
+            border-bottom: 1px solid var(--border);
+            background: #161b22;
+        }
+
+        .manifest-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            transition: transform 0.2s;
+        }
+
+        .manifest-card:hover {
+            border-color: var(--accent);
+        }
+
+        .header-label {
+            color: var(--accent);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1.5px;
+        }
+
+        .replica-count {
+            font-size: 4rem;
+            font-weight: 800;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .pod-dot {
+            height: 12px;
+            width: 12px;
+            border-radius: 3px;
+            display: inline-block;
+            margin: 4px;
+            background-color: var(--success);
+            box-shadow: 0 0 8px var(--success);
+            animation: pulse 2s infinite;
+        }
+
+        .pod-dot.not-ready {
+            background-color: var(--warning);
+            box-shadow: 0 0 8px var(--warning);
+        }
+
+        .pod-dot.failed {
+            background-color: var(--danger);
+            box-shadow: 0 0 8px var(--danger);
+            animation: none;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.4;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
+        .traffic-stat {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .request-log {
+            font-family: 'Monaco', 'Consolas', monospace;
+            background: #010409;
+            border-radius: 8px;
+            height: 200px;
+            overflow-y: auto;
+            padding: 1rem;
+            font-size: 0.8rem;
+            border: 1px solid var(--border);
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            border-left: 2px solid var(--accent);
+            padding-left: 8px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .progress {
+            background-color: #0d1117;
+            height: 8px;
+            border-radius: 4px;
+        }
+
+        .status-pill {
+            font-size: 0.7rem;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .pulse-ring {
+            width: 10px;
+            height: 10px;
+            background: var(--success);
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 8px;
+            box-shadow: 0 0 0 rgba(35, 134, 54, 0.4);
+            animation: pulse-ring 1.5s infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% {
+                box-shadow: 0 0 0 0 rgba(35, 134, 54, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(35, 134, 54, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(35, 134, 54, 0);
+            }
+        }
     </style>
 </head>
+
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark pb-3 pt-3">
         <div class="container">
-            <a class="navbar-brand fw-bold" href="/"><i class="fas fa-terminal me-2 text-info"></i>K8S-CLUSTER-003</a>
-            <div class="ms-auto d-flex">
-                <a class="nav-link px-3 active" href="/">DASHBOARD</a>
-                <a class="nav-link px-3 border-start border-secondary" href="/about.html">SYSTEM SPEC</a>
+            <a class="navbar-brand fw-bold d-flex align-items-center" href="/">
+                <i class="fas fa-cubes me-2 text-primary fs-4"></i>
+                <span>K8S INFRA CONSOLE</span>
+            </a>
+            <div class="ms-auto d-flex align-items-center">
+                <div class="me-4 d-flex align-items-center">
+                    <span class="pulse-ring" id="status-ring"></span>
+                    <span class="small text-muted" id="conn-status">CONNECTING...</span>
+                </div>
+                <div class="btn-group">
+                    <a href="/" class="btn btn-sm btn-outline-secondary active">Dashboard</a>
+                    <a href="/about.html" class="btn btn-sm btn-outline-secondary">System Specs</a>
+                </div>
             </div>
         </div>
     </nav>
 
-    <header class="hero text-center">
+    <header class="hero">
         <div class="container">
-            <h1 class="display-6 fw-bold">Infrastructure Monitor</h1>
-            <p class="text-muted small">NODE: <span class="text-info">azure-site.local</span> | STATUS: <span class="badge bg-success">ONLINE</span></p>
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="display-6 fw-bold mb-1">Production Monitoring</h1>
+                    <p class="text-muted mb-0">Cluster ID: <span class="text-accent">azure-k8s-west-001</span> |
+                        Namespace: <span class="badge bg-dark border border-secondary">default</span></p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div id="last-updated" class="small text-muted">Awaiting first update...</div>
+                </div>
+            </div>
         </div>
     </header>
 
-    <main class="container my-5">
+    <main class="container my-4">
         <div class="row g-4">
-            <div class="col-lg-8">
-                <div class="manifest-card p-4 h-100 shadow-lg">
-                    <div class="header-label mb-4"><i class="fas fa-layer-group me-2"></i>Live Replica Inventory</div>
+            <!-- Scaling & Replicas -->
+            <div class="col-lg-6">
+                <div class="manifest-card p-4 h-100 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div class="header-label">Cluster Scaling (HPA)</div>
+                        <span id="hpa-badge"
+                            class="status-pill bg-dark border border-secondary text-secondary">STABLE</span>
+                    </div>
                     <div class="row align-items-center">
-                        <div class="col-md-5 text-center">
-                            <div class="replica-count">2</div>
-                            <div class="text-muted mt-2 small">REPLICAS_RUNNING</div>
+                        <div class="col-5 text-center">
+                            <div class="replica-count" id="replica-count">--</div>
+                            <div class="small text-muted mt-2 fw-bold">ACTIVE PODS</div>
                         </div>
-                        <div class="col-md-7 border-start border-secondary py-3">
-                            <div id="pod-grid" class="d-flex flex-wrap justify-content-center">
-                                <span class="pod-dot"></span>
-                                <span class="pod-dot"></span>
+                        <div class="col-7 border-start border-secondary ps-4">
+                            <div id="pod-grid" class="mb-3 d-flex flex-wrap">
+                                <!-- Pod dots injected here -->
+                            </div>
+                            <div class="small text-muted">
+                                <div class="d-flex justify-content-between mb-1">
+                                    <span>Min Replicas:</span> <span class="text-white" id="min-replicas">--</span>
+                                </div>
+                                <div class="d-flex justify-content-between">
+                                    <span>Max Replicas:</span> <span class="text-white" id="max-replicas">--</span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="col-lg-4">
-                <div class="manifest-card p-4 h-100 shadow-lg">
-                    <div class="header-label mb-4"><i class="fas fa-bolt me-2"></i>Cluster Load</div>
-                    <div class="spec-item mb-3">
-                        <div class="d-flex justify-content-between align-items-end">
-                            <h2 class="fw-bold mb-0">34%</h2>
-                            <span class="text-muted small">CPU_UTIL</span>
+            <!-- Real-time Traffic -->
+            <div class="col-lg-6">
+                <div class="manifest-card p-4 h-100 shadow-sm" style="border-left: 4px solid var(--accent);">
+                    <div class="header-label mb-4">Live Traffic Monitor</div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="traffic-stat" id="current-rps">0.0</div>
+                            <div class="small text-muted">REQUESTS / SEC</div>
                         </div>
-                        <div class="progress mt-2" style="height: 6px; background: #0d1117;">
-                            <div class="progress-bar bg-info" style="width: 34%"></div>
+                        <div class="col-6 text-md-end">
+                            <div class="h3 fw-bold text-white mb-0" id="total-hits">0</div>
+                            <div class="small text-muted">TOTAL TRANSFERS</div>
+                        </div>
+                        <div class="col-12 mt-4">
+                            <div class="d-flex justify-content-between mb-1 small text-muted">
+                                <span>Cluster Resource Load</span>
+                                <span id="cpu-util">--%</span>
+                            </div>
+                            <div class="progress">
+                                <div class="progress-bar bg-info" id="cpu-bar" role="progressbar" style="width: 0%">
+                                </div>
+                            </div>
+                            <div class="mt-2 small text-muted fst-italic">
+                                <i class="fas fa-info-circle me-1"></i> Scaling threshold: <span
+                                    id="cpu-target">--</span>% utilization
+                            </div>
                         </div>
                     </div>
-                    <div class="mt-3 small text-muted">
-                        <i class="fas fa-info-circle me-1"></i> HPA threshold: 50%
+                </div>
+            </div>
+
+            <!-- Live Request Stream -->
+            <div class="col-12">
+                <div class="manifest-card p-4 shadow-sm">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="header-label">Incoming Request Stream (Apache Benchmark / Live)</div>
+                        <div class="small text-muted">
+                            <span class="badge bg-success me-2">HTTP 200</span>
+                            <span class="badge bg-secondary">GET /</span>
+                        </div>
+                    </div>
+                    <div class="request-log" id="request-stream">
+                        <div class="text-muted fst-italic">Awaiting incoming traffic...</div>
                     </div>
                 </div>
             </div>
         </div>
     </main>
+
+    <script>
+        const API_URL = "/api/status";
+        const POLL_MS = 2000;
+        let lastHits = 0;
+        let logBuffer = [];
+
+        function updateUI(data) {
+            // Replicas & HPA
+            document.getElementById('replica-count').innerText = data.current_replicas;
+            document.getElementById('min-replicas').innerText = data.min_replicas;
+            document.getElementById('max-replicas').innerText = data.max_replicas;
+
+            const badge = document.getElementById('hpa-badge');
+            if (data.desired_replicas > data.current_replicas) {
+                badge.className = "status-pill bg-warning text-dark";
+                badge.innerText = "SCALING UP";
+            } else if (data.desired_replicas < data.current_replicas) {
+                badge.className = "status-pill bg-info text-white";
+                badge.innerText = "COOLDOWN";
+            } else {
+                badge.className = "status-pill bg-success text-white";
+                badge.innerText = "STABLE";
+            }
+
+            // Pod Grid
+            const podGrid = document.getElementById('pod-grid');
+            podGrid.innerHTML = '';
+            data.pods.forEach(pod => {
+                const dot = document.createElement('span');
+                dot.className = pod.ready ? 'pod-dot' : 'pod-dot not-ready';
+                if (pod.phase !== 'Running') dot.classList.add('failed');
+                dot.title = pod.name;
+                podGrid.appendChild(dot);
+            });
+
+            // Traffic Stats
+            document.getElementById('current-rps').innerText = data.traffic.rps.toFixed(1);
+            document.getElementById('total-hits').innerText = data.traffic.total_hits.toLocaleString();
+
+            // CPU Load
+            document.getElementById('cpu-util').innerText = data.cpu_utilization + '%';
+            document.getElementById('cpu-target').innerText = data.cpu_target;
+            const cpuBar = document.getElementById('cpu-bar');
+            cpuBar.style.width = data.cpu_utilization + '%';
+            if (data.cpu_utilization > data.cpu_target) cpuBar.className = "progress-bar bg-danger";
+            else if (data.cpu_utilization > data.cpu_target * 0.8) cpuBar.className = "progress-bar bg-warning";
+            else cpuBar.className = "progress-bar bg-info";
+
+            // Status & Time
+            document.getElementById('conn-status').innerText = 'LIVE';
+            document.getElementById('status-ring').style.background = 'var(--success)';
+            document.getElementById('last-updated').innerText = 'Last Updated: ' + new Date().toLocaleTimeString();
+
+            // Handle Request Stream
+            const newHits = data.traffic.total_hits - lastHits;
+            if (newHits > 0 && lastHits > 0) {
+                addLogEntries(newHits, data.pods);
+            }
+            lastHits = data.traffic.total_hits;
+        }
+
+        function addLogEntries(count, pods) {
+            const stream = document.getElementById('request-stream');
+            if (stream.innerHTML.includes('Awaiting')) stream.innerHTML = '';
+
+            // Limit shown logs for performance
+            const showCount = Math.min(count, 5);
+            for (let i = 0; i < showCount; i++) {
+                const randomPod = pods[Math.floor(Math.random() * pods.length)];
+                const entry = document.createElement('div');
+                entry.className = 'log-entry';
+                const time = new Date().toLocaleTimeString();
+                entry.innerHTML = `<span class="text-muted">[${time}]</span> <span class="text-success">200 OK</span> - GET / - <span class="text-accent">${randomPod?.name || 'cluster-node'}</span>`;
+                stream.prepend(entry);
+
+                if (stream.children.length > 50) stream.removeChild(stream.lastChild);
+            }
+
+            if (count > showCount) {
+                const summary = document.createElement('div');
+                summary.className = 'log-entry text-muted small fst-italic';
+                summary.innerText = `... and ${count - showCount} more concurrent requests logged ...`;
+                stream.prepend(summary);
+            }
+        }
+
+        async function poll() {
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                updateUI(data);
+            } catch (error) {
+                console.error("Poll Error:", error);
+                document.getElementById('conn-status').innerText = 'RECONNECTING...';
+                document.getElementById('status-ring').style.background = 'var(--danger)';
+            }
+        }
+
+        setInterval(poll, POLL_MS);
+        poll();
+    </script>
 </body>
+
 </html>

@@ -1,0 +1,28 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cluster-health-auditor
+spec:
+  schedule: "*/5 * * * *"  # Runs every 5 minutes
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: auditor
+            image: bitnami/kubectl:latest
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting Cluster Audit..."
+              # Count pods that are NOT 'Running'
+              FAILED_PODS=1
+              
+              if [ "" -gt "0" ]; then
+                echo "CRITICAL:  pods are failing."
+                # Here we could push an alert to Redis using redis-cli
+              else
+                echo "System Healthy: All pods operational."
+              fi
+          restartPolicy: OnFailure

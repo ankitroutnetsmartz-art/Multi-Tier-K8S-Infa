@@ -13,36 +13,44 @@ spec:
         app: web-server
     spec:
       containers:
-      - name: nginx-container
-        image: nginx:alpine
-        ports:
-        - containerPort: 80
-        resources:
-          requests:
-            cpu: "50m"
-            memory: "64Mi"
-          limits:
-            cpu: "100m"
-            memory: "128Mi"
-        volumeMounts:
-        - name: html-volume
-          mountPath: /usr/share/nginx/html
+        - name: nginx-container
+          image: nginx:alpine
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "100m"
+              memory: "128Mi"
+          volumeMounts:
+            - name: html-volume
+              mountPath: /usr/share/nginx/html
+            - name: nginx-config-volume
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
       volumes:
-      - name: html-volume
-        configMap:
-          name: website-html
+        - name: html-volume
+          configMap:
+            name: website-html
+        - name: nginx-config-volume
+          configMap:
+            name: nginx-config
 ---
 apiVersion: v1
 kind: Service
 metadata:
   name: azure-k8s-site-service
 spec:
+  type: NodePort
   selector:
     app: web-server
   ports:
     - protocol: TCP
       port: 80
       targetPort: 80
+      nodePort: 32000
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
@@ -59,9 +67,9 @@ spec:
     scaleDown:
       stabilizationWindowSeconds: 30 # Fast deletion for demo purposes
   metrics:
-  - type: Resource
-    resource:
-      name: cpu
-      target:
-        type: Utilization
-        averageUtilization: 15
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 15
